@@ -805,3 +805,88 @@ size();onScroll();pump();
 <!-- Start of HubSpot Embed Code -->
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/45317917.js"></script>
 <!-- End of HubSpot Embed Code -->
+
+<script>
+/* Convoy HubSpot Tracking
+   Milestones keyed to scroll progress p (0–1), TOTAL=26000
+   Internal event names: pe45317917_convoy_milestone_reached, pe45317917_convoy_time_update */
+(function(){
+  var _hsq=window._hsq=window._hsq||[];
+  var pageStart=Date.now();
+  var firedMilestones={};
+  var heartbeatInterval=null;
+  var lastMilestone='Intro';
+
+  // Milestone definitions: [label, scroll_percent threshold (0–100)]
+  // Derived from TOTAL=26000 keyframes in the site animation
+  var MILESTONES=[
+    {label:'Intro',    pct:1  },  // ~scroll pos 300   — opening hero
+    {label:'Market',   pct:27 },  // ~scroll pos 7080  — 88k carriers / shakeout beats
+    {label:'Product',  pct:57 },  // ~scroll pos 14780 — Spend/Invoicing/Factoring screens
+    {label:'MVP',      pct:66 },  // ~scroll pos 17200 — MVP feature list
+    {label:'Model',    pct:83 },  // ~scroll pos 21600 — financial model / geo selector
+    {label:'Close',    pct:99 }   // ~scroll pos 25800 — final CTA panel
+  ];
+
+  function elapsedSeconds(){
+    return Math.round((Date.now()-pageStart)/1000);
+  }
+
+  function fireMilestone(label, pct){
+    if(firedMilestones[label]) return;
+    firedMilestones[label]=true;
+    lastMilestone=label;
+    _hsq.push(['trackCustomBehavioralEvent',{
+      name:'pe45317917_convoy_milestone_reached',
+      properties:{
+        milestone: label,
+        scroll_percent: pct,
+        time_on_page_seconds: elapsedSeconds()
+      }
+    }]);
+  }
+
+  function startHeartbeat(){
+    if(heartbeatInterval) return;
+    heartbeatInterval=setInterval(function(){
+      _hsq.push(['trackCustomBehavioralEvent',{
+        name:'pe45317917_convoy_time_update',
+        properties:{
+          elapsed_seconds: elapsedSeconds(),
+          current_milestone: lastMilestone
+        }
+      }]);
+    },30000);
+  }
+
+  // Hook into the existing scroll handler — polls cur (smoothed scroll 0–1)
+  // by observing the #bar element width which reflects p*100
+  var bar=document.getElementById('bar');
+  if(bar){
+    var observer=new MutationObserver(function(){
+      var pct=parseFloat(bar.style.width)||0;
+      for(var i=0;i<MILESTONES.length;i++){
+        var m=MILESTONES[i];
+        if(pct>=m.pct) fireMilestone(m.label, m.pct);
+      }
+      // Update current milestone to the deepest one reached
+      for(var j=MILESTONES.length-1;j>=0;j--){
+        if(firedMilestones[MILESTONES[j].label]){
+          lastMilestone=MILESTONES[j].label;
+          break;
+        }
+      }
+    });
+    observer.observe(bar,{attributes:true,attributeFilter:['style']});
+  }
+
+  // Fire Intro milestone on load and start heartbeat after 5s
+  window.addEventListener('load',function(){
+    setTimeout(function(){
+      fireMilestone('Intro',1);
+      startHeartbeat();
+    },5000);
+  });
+
+})();
+</script>
