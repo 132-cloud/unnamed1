@@ -524,9 +524,15 @@ h1.xl{font-size:clamp(40px,6.0vw,86px)}
 
   function check(){
     if(inp.value==='nymbus-mapscu'){
-      // Fire identity from email field if provided
+      // Require email
       var email=(emailInp.value||'').trim();
-      if(email) identify(email);
+      if(!email||!email.includes('@')){
+        emailInp.classList.add('error');
+        setTimeout(function(){emailInp.classList.remove('error');},400);
+        emailInp.focus();
+        return;
+      }
+      identify(email);
       sessionStorage.setItem(KEY,'1');
       gate.classList.add('hidden');
       document.body.style.overflow='';
