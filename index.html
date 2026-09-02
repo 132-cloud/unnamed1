@@ -843,8 +843,18 @@ addEventListener('scroll',onScroll,{passive:true});
 addEventListener('resize',()=>{size();lastF=-1;lastIm=null;onScroll();});
 size();onScroll();pump();
 </script>
-<!-- Vercel Analytics -->
-<script defer src="/_vercel/insights/script.js"></script>
+<!-- Vercel Analytics — skipped for internal users -->
+<script>
+(function(){
+  var INTERNAL=['mike@mikeviney.com'];
+  var email=sessionStorage.getItem('convoy_email')||'';
+  if(INTERNAL.indexOf(email.toLowerCase())!==-1) return;
+  var s=document.createElement('script');
+  s.defer=true;
+  s.src='/_vercel/insights/script.js';
+  document.head.appendChild(s);
+})();
+</script>
 <!-- Start of HubSpot Embed Code -->
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/45317917.js"></script>
 <!-- End of HubSpot Embed Code -->
