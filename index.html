@@ -15,6 +15,7 @@
 #pw-gate .pw-box{text-align:center;max-width:360px;padding:2rem}
 #pw-gate h2{color:#F5F1EA;font-size:1.25rem;font-weight:500;margin-bottom:1.5rem;letter-spacing:-.01em}
 #pw-gate input{width:100%;padding:.75rem 1rem;border:1px solid #333;border-radius:8px;background:#17181C;color:#F5F1EA;font-size:1rem;font-family:inherit;outline:none;transition:border-color .2s}
+#pw-gate input+input{margin-top:.6rem}
 #pw-gate input:focus{border-color:#E85B1A}
 #pw-gate input.error{border-color:#e53e3e;animation:shake .4s ease}
 #pw-gate button{margin-top:1rem;width:100%;padding:.75rem;border:none;border-radius:8px;background:#E85B1A;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:background .2s}
@@ -475,6 +476,7 @@ h1.xl{font-size:clamp(40px,6.0vw,86px)}
 <div id="pw-gate">
 <div class="pw-box">
 <h2>Enter password to continue</h2>
+<input type="email" id="pw-email" placeholder="Your email (optional)" autocomplete="email">
 <input type="password" id="pw-input" placeholder="Password" autocomplete="off">
 <button id="pw-btn">Enter</button>
 </div>
@@ -484,26 +486,59 @@ h1.xl{font-size:clamp(40px,6.0vw,86px)}
 <div id="boot"><div id="bootbar"><div id="bootfill"></div></div><p>Loading</p></div>
 
 <script>
-/* Password Gate */
+/* Password Gate + HubSpot Identity */
 (function(){
-  const gate=document.getElementById('pw-gate');
-  const inp=document.getElementById('pw-input');
-  const btn=document.getElementById('pw-btn');
-  const KEY='convoy_auth';
-  if(sessionStorage.getItem(KEY)==='1'){gate.classList.add('hidden')}
-  else{document.body.style.overflow='hidden'}
+  var _hsq=window._hsq=window._hsq||[];
+  var gate=document.getElementById('pw-gate');
+  var emailInp=document.getElementById('pw-email');
+  var inp=document.getElementById('pw-input');
+  var btn=document.getElementById('pw-btn');
+  var KEY='convoy_auth';
+
+  // Identity helper — fires once per session
+  function identify(email){
+    if(!email||!email.includes('@')) return;
+    var stored=sessionStorage.getItem('convoy_email');
+    if(stored===email) return;
+    sessionStorage.setItem('convoy_email',email);
+    _hsq.push(['identify',{email:email}]);
+    _hsq.push(['trackPageView']);
+  }
+
+  // 1. Check URL parameter ?email= on load
+  (function(){
+    var params=new URLSearchParams(window.location.search);
+    var e=params.get('email');
+    if(e) identify(e);
+  })();
+
+  // 2. Check if already authed this session
+  if(sessionStorage.getItem(KEY)==='1'){
+    gate.classList.add('hidden');
+    // Re-identify from stored email if returning
+    var stored=sessionStorage.getItem('convoy_email');
+    if(stored) identify(stored);
+  } else {
+    document.body.style.overflow='hidden';
+  }
+
   function check(){
     if(inp.value==='nymbus-mapscu'){
+      // Fire identity from email field if provided
+      var email=(emailInp.value||'').trim();
+      if(email) identify(email);
       sessionStorage.setItem(KEY,'1');
       gate.classList.add('hidden');
       document.body.style.overflow='';
-    }else{
+    } else {
       inp.classList.add('error');
-      setTimeout(()=>inp.classList.remove('error'),400);
+      setTimeout(function(){inp.classList.remove('error');},400);
     }
   }
+
   btn.addEventListener('click',check);
-  inp.addEventListener('keydown',e=>{if(e.key==='Enter')check()});
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter')check();});
+  emailInp.addEventListener('keydown',function(e){if(e.key==='Enter')inp.focus();});
 })();
 </script>
 
